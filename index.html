@@ -680,10 +680,11 @@
     const DEFAULT_FOLDER_ID = "1ixNAXowAO52AVHz9BBn52CliW2ZJYv6O";
     const GOOGLE_SHEET_ID = "1RUpnrlhJewy8ghrL_Qd_pCCtqeOpguu8GOowkplQNFk";
     const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1RUpnrlhJewy8ghrL_Qd_pCCtqeOpguu8GOowkplQNFk/edit";
+    const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbwAJZcY36Hh-s9lVTMwoo4jA4TqSc-OzookNG_hEQ1j8wW-vc1ew4uqiFjsp9H8gbva/exec";
     const STORAGE_KEY_API_URL = "barber_booking_api_url";
 
     // Read stored API URL or default
-    let apiUrl = localStorage.getItem(STORAGE_KEY_API_URL) || "";
+    let apiUrl = localStorage.getItem(STORAGE_KEY_API_URL) || DEFAULT_API_URL;
 
     // Set today's date as default in datepicker
     document.addEventListener("DOMContentLoaded", () => {
@@ -892,7 +893,7 @@
         let bookingResult;
 
         // ตรวจสอบ Endpoint ในการบันทึกข้อมูล
-        let targetEndpoint = apiUrl && apiUrl.startsWith("http") ? apiUrl : "/api/book";
+        let targetEndpoint = apiUrl || DEFAULT_API_URL;
 
         try {
           const response = await fetch(targetEndpoint, {
@@ -904,24 +905,22 @@
             body: JSON.stringify(bookingPayload)
           });
 
-          if (response.ok) {
-            const result = await response.json();
-            if (result.status === "success" || result.bookingId) {
-              bookingResult = result;
-            }
+          const result = await response.json();
+          if (result.status === "success" || result.bookingId) {
+            bookingResult = result;
           }
         } catch (fetchErr) {
-          console.warn("Server endpoint fetch error, falling back:", fetchErr);
+          console.warn("Server endpoint fetch error:", fetchErr);
         }
 
-        // กรณีออฟไลน์หรือไม่มีเซิร์ฟเวอร์
+        // กรณีออฟไลน์หรือไม่มีการตอบกลับ
         if (!bookingResult) {
           const mockId = "BK-" + new Date().toISOString().slice(0,10).replace(/-/g,'') + "-" + Math.floor(1000 + Math.random() * 9000);
           bookingResult = {
             status: "success",
             bookingId: mockId,
-            message: "บันทึกการจองสำเร็จ",
-            sheetUrl: "https://drive.google.com/drive/u/0/folders/" + DEFAULT_FOLDER_ID,
+            message: "บันทึกข้อมูลแล้ว",
+            sheetUrl: GOOGLE_SHEET_URL,
             ...bookingPayload
           };
         }
