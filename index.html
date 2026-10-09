@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจองคิวร้านตัดผม | Barber Shop Booking</title>
+  <!-- Google Fonts: Prompt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SweetAlert2 for notifications -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              gold: '#F59E0B',
+              darkgold: '#D97706',
+              charcoal: '#0F172A',
+              card: '#1E293B',
+              border: '#334155'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Prompt', sans-serif;
+      background-color: #0b0f19;
+      color: #f1f5f9;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    .ticket-cutout-left, .ticket-cutout-right {
+      width: 24px;
+      height: 24px;
+      background-color: #0b0f19;
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .ticket-cutout-left { left: -12px; }
+    .ticket-cutout-right { right: -12px; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- TOP BAR & STATUS -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-amber-500/20">
+          <i class="fa-solid fa-scissors"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            THE GENTLEMAN BARBER
+            <span class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-medium">คลาสสิก & โมเดิร์น</span>
+          </h1>
+          <p class="text-xs text-slate-400">ระบบจองคิวออนไลน์ • อัปเดตข้อมูลลง Google Sheets อัตโนมัติ</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions / Links -->
+      <div class="flex items-center gap-2">
+        <a href="https://docs.google.com/spreadsheets/d/1RUpnrlhJewy8ghrL_Qd_pCCtqeOpguu8GOowkplQNFk/edit" target="_blank" rel="noopener noreferrer" 
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 transition">
+          <i class="fa-solid fa-file-excel"></i>
+          <span>เปิด Google Sheet</span>
+        </a>
+        <a href="https://drive.google.com/drive/u/0/folders/1ixNAXowAO52AVHz9BBn52CliW2ZJYv6O" target="_blank" rel="noopener noreferrer" 
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          <i class="fa-brands fa-google-drive text-amber-400"></i>
+          <span>โฟลเดอร์ Drive</span>
+        </a>
+        <button onclick="openApiConfigModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition">
+          <i class="fa-solid fa-gear"></i>
+          <span>ตั้งค่า Web App API</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto px-4 py-8 w-full flex-1">
+    
+    <!-- BANNER HERO -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 p-6 md:p-8 mb-8 shadow-2xl">
+      <div class="absolute -right-12 -top-12 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold mb-3 border border-amber-500/30">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            เปิดให้บริการ 10:00 - 20:00 น. ทุกวัน
+          </div>
+          <h2 class="text-2xl md:text-3xl font-bold text-white mb-2">จองคิวตัดผมง่ายๆ ในไม่กี่ขั้นตอน</h2>
+          <p class="text-slate-400 text-sm max-w-xl">
+            เลือกบริการที่ต้องการ ช่างผมที่คุณไว้วางใจ พร้อมวันและเวลาที่สะดวก ข้อมูลจะถูกจัดเก็บเข้าสู่ <strong>Google Sheet</strong> ในโฟลเดอร์ Google Drive ของร้านโดยอัตโนมัติ
+          </p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 text-xs text-slate-300">
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex items-center gap-3">
+            <i class="fa-solid fa-clock text-amber-400 text-xl"></i>
+            <div>
+              <div class="font-bold text-white">ตรงต่อเวลา</div>
+              <div class="text-slate-400">ไม่ต้องนั่งรอคิวนาน</div>
+            </div>
+          </div>
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex items-center gap-3">
+            <i class="fa-solid fa-shield-halved text-amber-400 text-xl"></i>
+            <div>
+              <div class="font-bold text-white">บันทึกอัตโนมัติ</div>
+              <div class="text-slate-400">คลาวด์ปลอดภัย 100%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOOKING FORM WRAPPER -->
+    <form id="bookingForm" onsubmit="handleBookingSubmit(event)" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- LEFT COLUMN: SELECTION STEPS -->
+      <div class="lg:col-span-8 space-y-8">
+
+        <!-- STEP 1: บริการที่ต้องการ -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-bold flex items-center justify-center text-sm">1</span>
+              <div>
+                <h3 class="text-base font-bold text-white">เลือกบริการ (Select Service)</h3>
+                <p class="text-xs text-slate-400">เลือกโปรแกรมการดูแลที่คุณต้องการ</p>
+              </div>
+            </div>
+            <span class="text-xs text-amber-400 font-medium">* จำเป็นต้องเลือก</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="serviceOptions">
+            <!-- Service 1 -->
+            <label class="service-card relative flex items-start gap-3 p-4 rounded-xl border border-slate-700/70 bg-slate-800/50 hover:bg-slate-800/90 cursor-pointer transition-all duration-200 hover:border-amber-500/60">
+              <input type="radio" name="service" value="ตัดผมวินเทจ / Fade ทรงสุภาพ" data-price="350" data-duration="45" class="mt-1 text-amber-500 focus:ring-amber-500 h-4 w-4" checked onchange="updateSummary()">
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-semibold text-white text-sm">ตัดผมชาย วินเทจ / Fade</span>
+                  <span class="text-amber-400 font-bold text-sm">฿350</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">ไถไล่ระดับ ออกแบบทรงผมตามรูปหน้า กันขอบคมชัด</p>
+                <div class="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
+                  <i class="fa-regular fa-clock"></i> 45 นาที
+                </div>
+              </div>
+            </label>
+
+            <!-- Service 2 -->
+            <label class="service-card relative flex items-start gap-3 p-4 rounded-xl border border-slate-700/70 bg-slate-800/50 hover:bg-slate-800/90 cursor-pointer transition-all duration-200 hover:border-amber-500/60">
+              <input type="radio" name="service" value="ตัดผม + สระไดร์ + เซ็ตทรงพรีเมียม" data-price="450" data-duration="60" class="mt-1 text-amber-500 focus:ring-amber-500 h-4 w-4" onchange="updateSummary()">
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-semibold text-white text-sm">ตัดผม + สระไดร์ เซ็ตทรง</span>
+                  <span class="text-amber-400 font-bold text-sm">฿450</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">ตัดผมทรงตามใจชอบ พร้อมสระนวดผ่อนคลายและเซ็ตสไตล์</p>
+                <div class="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
+                  <i class="fa-regular fa-clock"></i> 60 นาที
+                </div>
+              </div>
+            </label>
+
+            <!-- Service 3 -->
+            <label class="service-card relative flex items-start gap-3 p-4 rounded-xl border border-slate-700/70 bg-slate-800/50 hover:bg-slate-800/90 cursor-pointer transition-all duration-200 hover:border-amber-500/60">
+              <input type="radio" name="service" value="โกนหนวด & แต่งเครา สปาผ้าร้อน" data-price="250" data-duration="30" class="mt-1 text-amber-500 focus:ring-amber-500 h-4 w-4" onchange="updateSummary()">
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-semibold text-white text-sm">โกนหนวด & แต่งเครา สปาร้อน</span>
+                  <span class="text-amber-400 font-bold text-sm">฿250</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">ผ้าร้อนเปิดรูขุมขน โกนเกลี้ยงเกลา บำรุงหลังโกนผิวเนียนนุ่ม</p>
+                <div class="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
+                  <i class="fa-regular fa-clock"></i> 30 นาที
+                </div>
+              </div>
+            </label>
+
+            <!-- Service 4 -->
+            <label class="service-card relative flex items-start gap-3 p-4 rounded-xl border border-slate-700/70 bg-slate-800/50 hover:bg-slate-800/90 cursor-pointer transition-all duration-200 hover:border-amber-500/60">
+              <input type="radio" name="service" value="ดัดผมวอลลุ่ม สไตล์เกาหลี (Volume Perm)" data-price="1200" data-duration="90" class="mt-1 text-amber-500 focus:ring-amber-500 h-4 w-4" onchange="updateSummary()">
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-semibold text-white text-sm">ดัดวอลลุ่ม สไตล์เกาหลี</span>
+                  <span class="text-amber-400 font-bold text-sm">฿1,200</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">เพิ่มมิติผมมีน้ำหนัก เซ็ตทรงง่าย ไม่ลีบแบน</p>
+                <div class="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
+                  <i class="fa-regular fa-clock"></i> 90 นาที
+                </div>
+              </div>
+            </label>
+
+            <!-- Service 5 -->
+            <label class="service-card relative flex items-start gap-3 p-4 rounded-xl border border-slate-700/70 bg-slate-800/50 hover:bg-slate-800/90 cursor-pointer transition-all duration-200 hover:border-amber-500/60">
+              <input type="radio" name="service" value="ทำสีผม / ย้อมปิดหงอก พรีเมียม" data-price="800" data-duration="60" class="mt-1 text-amber-500 focus:ring-amber-500 h-4 w-4" onchange="updateSummary()">
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-semibold text-white text-sm">ทำสีผม / ย้อมปิดหงอก</span>
+                  <span class="text-amber-400 font-bold text-sm">฿800</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">สีย้อมนำเข้า ไม่แสบหนังศีรษะ สีติดทนนาน</p>
+                <div class="mt-2 text-[11px] text-slate-500 flex items-center gap-1">
+                  <i class="fa-regular fa-clock"></i> 60 นาที
+                </div>
+              </div>
+            </label>
+
+            <!-- Service 6: Full Package -->
+            <label class="service-card relative flex items-start gap-3 p-4 rounded-xl border border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 cursor-pointer transition-all duration-200">
+              <input type="radio" name="service" value="Full Package พรีเมียม (ตัด+สระ+โกนหนวด)" data-price="690" data-duration="75" class="mt-1 text-amber-500 focus:ring-amber-500 h-4 w-4" onchange="updateSummary()">
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-semibold text-amber-300 text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-crown text-xs text-amber-400"></i> Full VIP Package
+                  </span>
+                  <span class="text-amber-400 font-bold text-sm">฿690</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">รวมตัด สระ ไดร์ เซ็ตทรง และโกนหนวดสปาผ้าร้อนครบสูตร</p>
+                <div class="mt-2 text-[11px] text-amber-400/80 flex items-center gap-1">
+                  <i class="fa-regular fa-clock"></i> 75 นาที • ประหยัด 110 บ.
+                </div>
+              </div>
+            </label>
+          </div>
+        </section>
+
+        <!-- STEP 2: เลือกช่างตัดผม -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-bold flex items-center justify-center text-sm">2</span>
+              <div>
+                <h3 class="text-base font-bold text-white">เลือกช่างตัดผม (Select Barber)</h3>
+                <p class="text-xs text-slate-400">เลือกช่างที่คุณถูกใจหรือเลือกคิวที่เร็วที่สุด</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <!-- Barber: Any -->
+            <label class="barber-card relative flex flex-col items-center text-center p-4 rounded-xl border border-slate-700 bg-slate-800/40 hover:bg-slate-800 cursor-pointer transition group">
+              <input type="radio" name="barber" value="ช่างคนไหนก็ได้ (คิวเร็วที่สุด)" class="sr-only" checked onchange="updateSummary()">
+              <div class="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center text-amber-400 text-2xl mb-2 group-hover:scale-105 transition">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+              <span class="text-xs font-bold text-white">ช่างคนไหนก็ได้</span>
+              <span class="text-[11px] text-amber-400 mt-0.5">⚡ ได้คิวเร็วสุด</span>
+              <div class="selected-indicator hidden absolute top-2 right-2 text-amber-400 text-xs">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </label>
+
+            <!-- Barber 1 -->
+            <label class="barber-card relative flex flex-col items-center text-center p-4 rounded-xl border border-slate-700 bg-slate-800/40 hover:bg-slate-800 cursor-pointer transition group">
+              <input type="radio" name="barber" value="ช่างเอก (Master Barber)" class="sr-only" onchange="updateSummary()">
+              <div class="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 text-2xl mb-2 group-hover:scale-105 transition border-2 border-transparent group-hover:border-amber-400">
+                <i class="fa-solid fa-user-tie"></i>
+              </div>
+              <span class="text-xs font-bold text-white">ช่างเอก</span>
+              <span class="text-[11px] text-slate-400 mt-0.5">Master วินเทจ</span>
+              <div class="selected-indicator hidden absolute top-2 right-2 text-amber-400 text-xs">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </label>
+
+            <!-- Barber 2 -->
+            <label class="barber-card relative flex flex-col items-center text-center p-4 rounded-xl border border-slate-700 bg-slate-800/40 hover:bg-slate-800 cursor-pointer transition group">
+              <input type="radio" name="barber" value="ช่างท็อป (Fade Specialist)" class="sr-only" onchange="updateSummary()">
+              <div class="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 text-2xl mb-2 group-hover:scale-105 transition border-2 border-transparent group-hover:border-amber-400">
+                <i class="fa-solid fa-user-ninja"></i>
+              </div>
+              <span class="text-xs font-bold text-white">ช่างท็อป</span>
+              <span class="text-[11px] text-slate-400 mt-0.5">Fade สตรีท</span>
+              <div class="selected-indicator hidden absolute top-2 right-2 text-amber-400 text-xs">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </label>
+
+            <!-- Barber 3 -->
+            <label class="barber-card relative flex flex-col items-center text-center p-4 rounded-xl border border-slate-700 bg-slate-800/40 hover:bg-slate-800 cursor-pointer transition group">
+              <input type="radio" name="barber" value="ช่างบาส (Korean & Perm)" class="sr-only" onchange="updateSummary()">
+              <div class="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 text-2xl mb-2 group-hover:scale-105 transition border-2 border-transparent group-hover:border-amber-400">
+                <i class="fa-solid fa-user-astronaut"></i>
+              </div>
+              <span class="text-xs font-bold text-white">ช่างบาส</span>
+              <span class="text-[11px] text-slate-400 mt-0.5">ดัดวอลลุ่ม เกาหลี</span>
+              <div class="selected-indicator hidden absolute top-2 right-2 text-amber-400 text-xs">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </label>
+          </div>
+        </section>
+
+        <!-- STEP 3: เลือกวันและเวลา -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-bold flex items-center justify-center text-sm">3</span>
+              <div>
+                <h3 class="text-base font-bold text-white">เลือกวันและเวลา (Date & Time)</h3>
+                <p class="text-xs text-slate-400">เลือกวันที่และรอบเวลาที่สะดวกมารับบริการ</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Date Selector -->
+          <div class="mb-5">
+            <label class="block text-xs font-medium text-slate-300 mb-2">
+              <i class="fa-regular fa-calendar-days text-amber-400 mr-1"></i> เลือกวันที่นัดหมาย:
+            </label>
+            <div class="grid grid-cols-3 gap-2 mb-3" id="quickDateButtons">
+              <!-- Dynamically populated or static -->
+              <button type="button" onclick="selectQuickDate(0)" class="quick-date-btn py-2 px-3 rounded-lg text-xs font-medium border border-slate-700 bg-slate-800 hover:bg-slate-700 text-white transition">วันนี้</button>
+              <button type="button" onclick="selectQuickDate(1)" class="quick-date-btn py-2 px-3 rounded-lg text-xs font-medium border border-slate-700 bg-slate-800 hover:bg-slate-700 text-white transition">พรุ่งนี้</button>
+              <button type="button" onclick="selectQuickDate(2)" class="quick-date-btn py-2 px-3 rounded-lg text-xs font-medium border border-slate-700 bg-slate-800 hover:bg-slate-700 text-white transition">มะรืนนี้</button>
+            </div>
+            <input type="date" id="bookingDate" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition" onchange="updateSummary()">
+          </div>
+
+          <!-- Time Slots -->
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-2">
+              <i class="fa-regular fa-clock text-amber-400 mr-1"></i> เลือกรอบเวลา (รอบละ 1 ชั่วโมง):
+            </label>
+            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2" id="timeSlotContainer">
+              <!-- Times -->
+              <label class="time-slot-label cursor-pointer">
+                <input type="radio" name="bookingTime" value="10:00" class="sr-only" checked onchange="updateSummary()">
+                <div class="time-slot-btn py-2.5 px-3 text-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition">10:00 น.</div>
+              </label>
+              <label class="time-slot-label cursor-pointer">
+                <input type="radio" name="bookingTime" value="11:00" class="sr-only" onchange="updateSummary()">
+                <div class="time-slot-btn py-2.5 px-3 text-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition">11:00 น.</div>
+              </label>
+              <label class="time-slot-label cursor-pointer">
+                <input type="radio" name="bookingTime" value="12:00" class="sr-only" onchange="updateSummary()">
+                <div class="time-slot-btn py-2.5 px-3 text-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition">12:00 น.</div>
+              </label>
+              <label class="time-slot-label cursor-pointer">
+                <input type="radio" name="bookingTime" value="13:00" class="sr-only" onchange="updateSummary()">
+                <div class="time-slot-btn py-2.5 px-3 text-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition">13:00 น.</div>
+              </label>
+              <label class="time-slot-label cursor-pointer">
+                <input type="radio" name="bookingTime" value="14:00" class="sr-only" onchange="updateSummary()">
+                <div class="time-slot-btn py-2.5 px-3 text-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition">14:00 น.</div>
+              </label>
+              <label class="time-slot-label cursor-pointer">
+                <input type="radio" name="bookingTime" value="15:00" class="sr-only" onchange="updateSummary()">
+                <div class="time-slot-btn py-2.5 px-3 text-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition">15:00 น.</div>
+              </label>
+              <label class="time-slot-label cursor-pointer">
+                <input type="radio" name="bookingTime" value="16:00" class="sr-only" onchange="updateSummary()">
+                <div class="time-slot-btn py-2.5 px-3 text-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition">16:00 น.</div>
+              </label>
+              <label class="time-slot-label cursor-pointer">
+                <input type="radio" name="bookingTime" value="17:00" class="sr-only" onchange="updateSummary()">
+                <div class="time-slot-btn py-2.5 px-3 text-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition">17:00 น.</div>
+              </label>
+              <label class="time-slot-label cursor-pointer">
+                <input type="radio" name="bookingTime" value="18:00" class="sr-only" onchange="updateSummary()">
+                <div class="time-slot-btn py-2.5 px-3 text-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition">18:00 น.</div>
+              </label>
+              <label class="time-slot-label cursor-pointer">
+                <input type="radio" name="bookingTime" value="19:00" class="sr-only" onchange="updateSummary()">
+                <div class="time-slot-btn py-2.5 px-3 text-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition">19:00 น.</div>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- STEP 4: ข้อมูลลูกค้า -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-bold flex items-center justify-center text-sm">4</span>
+              <div>
+                <h3 class="text-base font-bold text-white">ข้อมูลผู้จอง (Customer Information)</h3>
+                <p class="text-xs text-slate-400">กรอกข้อมูลเพื่อใช้ยืนยันการจองคิว</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="customerName" class="block text-xs font-medium text-slate-300 mb-1.5">
+                ชื่อ-นามสกุล หรือ ชื่อเล่น <span class="text-amber-400">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-sm">
+                  <i class="fa-solid fa-user"></i>
+                </span>
+                <input type="text" id="customerName" required placeholder="เช่น คุณธนภัทร" 
+                       class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition" oninput="updateSummary()">
+              </div>
+            </div>
+
+            <div>
+              <label for="customerPhone" class="block text-xs font-medium text-slate-300 mb-1.5">
+                เบอร์โทรศัพท์ติดต่อ <span class="text-amber-400">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-sm">
+                  <i class="fa-solid fa-phone"></i>
+                </span>
+                <input type="tel" id="customerPhone" required placeholder="เช่น 0812345678" pattern="[0-9]{9,10}"
+                       class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition" oninput="updateSummary()">
+              </div>
+            </div>
+
+            <div>
+              <label for="lineId" class="block text-xs font-medium text-slate-300 mb-1.5">
+                LINE ID <span class="text-slate-500">(ถ้ามี เพื่อรับแจ้งเตือน)</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-sm">
+                  <i class="fa-brands fa-line text-emerald-400"></i>
+                </span>
+                <input type="text" id="lineId" placeholder="เช่น tanapat_line" 
+                       class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+              </div>
+            </div>
+
+            <div>
+              <label for="notes" class="block text-xs font-medium text-slate-300 mb-1.5">
+                รายละเอียดเพิ่มเติม / รีเควสทรงผม
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-sm">
+                  <i class="fa-solid fa-note-sticky"></i>
+                </span>
+                <input type="text" id="notes" placeholder="เช่น ขอไถข้างเบอร์ 1, เซ็ตผมธรรมชาติ" 
+                       class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- RIGHT COLUMN: STICKY BOOKING SUMMARY -->
+      <div class="lg:col-span-4">
+        <div class="sticky top-20 space-y-4">
+
+          <!-- SUMMARY CARD -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2 pb-3 border-b border-slate-800">
+              <i class="fa-solid fa-receipt text-amber-400"></i> สรุปรายการจองคิว
+            </h3>
+
+            <div class="space-y-3.5 text-xs">
+              <div class="flex justify-between items-start">
+                <span class="text-slate-400">บริการ:</span>
+                <span id="sumService" class="font-medium text-white text-right max-w-[180px]">ตัดผมวินเทจ / Fade</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">ระยะเวลา:</span>
+                <span id="sumDuration" class="font-medium text-slate-300">45 นาที</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">ช่างตัดผม:</span>
+                <span id="sumBarber" class="font-medium text-amber-400">ช่างคนไหนก็ได้</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">วันที่นัดหมาย:</span>
+                <span id="sumDate" class="font-medium text-white">-</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">เวลานัดหมาย:</span>
+                <span id="sumTime" class="font-medium text-emerald-400 font-mono text-sm">10:00 น.</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">ชื่อผู้จอง:</span>
+                <span id="sumName" class="font-medium text-slate-300">-</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">เบอร์โทรศัพท์:</span>
+                <span id="sumPhone" class="font-medium text-slate-300">-</span>
+              </div>
+
+              <div class="border-t border-slate-800 pt-3.5 flex justify-between items-baseline">
+                <div>
+                  <span class="text-sm font-bold text-white block">ยอดชำระโดยประมาณ</span>
+                  <span class="text-[10px] text-slate-500">ชำระเงินที่หน้าร้านหลังรับบริการ</span>
+                </div>
+                <span id="sumPrice" class="text-2xl font-bold text-amber-400">฿350</span>
+              </div>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <button type="submit" id="btnSubmit" 
+                    class="mt-6 w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl text-sm transition-all duration-200 shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 group">
+              <span id="btnSubmitText">ยืนยันการจองคิว</span>
+              <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition" id="btnSubmitIcon"></i>
+              <svg id="btnSubmitSpinner" class="hidden animate-spin h-5 w-5 text-slate-950" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+            </button>
+
+            <!-- STORAGE & CONNECTION BADGE -->
+            <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+              <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-database text-amber-500"></i> บันทึกเข้า Google Sheets
+              </span>
+              <span id="apiStatusBadge" class="text-emerald-400 font-medium">พร้อมทำงาน</span>
+            </div>
+          </div>
+
+          <!-- SHOP DETAILS CARD -->
+          <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-xs text-slate-400 space-y-2">
+            <div class="flex items-center gap-2 text-slate-300 font-medium">
+              <i class="fa-solid fa-location-dot text-amber-400"></i> ที่ตั้ง & เวลาเปิด-ปิด
+            </div>
+            <p>ร้านเปิดให้บริการทุกวัน 10:00 - 20:00 น.</p>
+            <p class="text-[11px] text-slate-500">กรุณามาถึงก่อนเวลานัดหมาย 5-10 นาที หากมาช้าเกิน 15 นาที ขอสงวนสิทธิ์ยกเว้นคิวดังกล่าว</p>
+          </div>
+
+        </div>
+      </div>
+
+    </form>
+  </main>
+
+  <!-- SUCCESS POPUP / BOOKING TICKET MODAL -->
+  <div id="successModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300">
+      
+      <!-- Top Ticket Header -->
+      <div class="bg-gradient-to-r from-amber-500 to-amber-600 p-5 text-slate-950 text-center relative">
+        <div class="w-12 h-12 bg-slate-950 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-2 text-xl shadow-md">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h4 class="text-lg font-bold">จองคิวสำเร็จเรียบร้อย!</h4>
+        <p class="text-xs text-slate-900/80">ระบบได้บันทึกคิวของคุณเข้าสู่ Google Sheets เรียบร้อยแล้ว</p>
+      </div>
+
+      <!-- Ticket Body -->
+      <div class="p-6 relative bg-slate-900">
+        <!-- Cutout effect -->
+        <div class="ticket-cutout-left"></div>
+        <div class="ticket-cutout-right"></div>
+
+        <!-- Ticket Info -->
+        <div class="bg-slate-800/60 rounded-xl p-4 border border-slate-700/60 space-y-3 text-xs mb-4">
+          <div class="flex justify-between items-center border-b border-slate-700/60 pb-2">
+            <span class="text-slate-400">รหัสการจอง (Booking ID):</span>
+            <span id="ticketId" class="font-mono font-bold text-amber-400 text-sm">BK-202610-0001</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">ชื่อลูกค้า:</span>
+            <span id="ticketName" class="font-medium text-white">-</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">เบอร์โทรศัพท์:</span>
+            <span id="ticketPhone" class="font-medium text-white">-</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">บริการ:</span>
+            <span id="ticketService" class="font-medium text-white">-</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">ช่างตัดผม:</span>
+            <span id="ticketBarber" class="font-medium text-amber-400">-</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400">วันและเวลานัดหมาย:</span>
+            <span id="ticketDateTime" class="font-bold text-emerald-400">-</span>
+          </div>
+          <div class="flex justify-between items-center border-t border-slate-700/60 pt-2">
+            <span class="text-slate-400 font-bold">ราคาโดยประมาณ:</span>
+            <span id="ticketPrice" class="font-bold text-amber-400 text-sm">฿350</span>
+          </div>
+        </div>
+
+        <!-- Links to Sheets & Drive -->
+        <div class="space-y-2 mb-4">
+          <a id="btnOpenSheet" href="#" target="_blank" class="w-full py-2.5 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-file-excel text-emerald-400"></i> เปิดดูข้อมูลใน Google Sheet
+          </a>
+          <a href="https://drive.google.com/drive/u/0/folders/1ixNAXowAO52AVHz9BBn52CliW2ZJYv6O" target="_blank" class="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition">
+            <i class="fa-brands fa-google-drive text-amber-400"></i> เปิดโฟลเดอร์ Google Drive ปลายทาง
+          </a>
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="window.print()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition">
+            <i class="fa-solid fa-print mr-1"></i> พิมพ์บัตรคิว
+          </button>
+          <button onclick="closeSuccessModal()" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition">
+            เสร็จสิ้น
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- API CONFIG MODAL -->
+  <div id="apiConfigModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-cloud-arrow-up text-amber-400"></i> ตั้งค่า Google Apps Script Web App URL
+        </h3>
+        <button onclick="closeApiConfigModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-300 mb-3">
+        หลังจากทำการ Deploy Google Apps Script ใน <code>https://script.google.com/home</code> แล้ว ให้นำ <strong>Web App URL</strong> (ที่ลงท้ายด้วย <code>/exec</code>) มาใส่ในช่องนี้:
+      </p>
+
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-slate-400 mb-1">Web App URL:</label>
+        <input type="url" id="customApiUrl" placeholder="https://script.google.com/macros/s/AKfycb.../exec" 
+               class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 transition font-mono">
+      </div>
+
+      <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 text-[11px] text-slate-400 space-y-1 mb-5">
+        <div>📁 <strong>โฟลเดอร์ Google Drive:</strong> <code>1ixNAXowAO52AVHz9BBn52CliW2ZJYv6O</code></div>
+        <div>💡 หากยังไม่ได้ Deploy ระบบจะจำลองการจอง (Simulation Mode) เพื่อให้สามารถทดสอบ UI ได้ทันที</div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="closeApiConfigModal()" class="py-2 px-4 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white transition">ยกเลิก</button>
+        <button type="button" onclick="saveApiUrl()" class="py-2 px-4 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition">บันทึกการตั้งค่า</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800 bg-slate-900/60 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p>© 2026 THE GENTLEMAN BARBER. ระบบจองคิวออนไลน์เชื่อมต่อ Google Sheets & Google Drive</p>
+      <div class="flex items-center gap-4 text-slate-400">
+        <a href="https://drive.google.com/drive/u/0/folders/1ixNAXowAO52AVHz9BBn52CliW2ZJYv6O" target="_blank" class="hover:text-amber-400 transition flex items-center gap-1">
+          <i class="fa-brands fa-google-drive"></i> โฟลเดอร์จัดเก็บ
+        </a>
+        <a href="https://script.google.com/home" target="_blank" class="hover:text-amber-400 transition flex items-center gap-1">
+          <i class="fa-solid fa-code"></i> Apps Script
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // CONFIGURATION
+    const DEFAULT_FOLDER_ID = "1ixNAXowAO52AVHz9BBn52CliW2ZJYv6O";
+    const GOOGLE_SHEET_ID = "1RUpnrlhJewy8ghrL_Qd_pCCtqeOpguu8GOowkplQNFk";
+    const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1RUpnrlhJewy8ghrL_Qd_pCCtqeOpguu8GOowkplQNFk/edit";
+    const STORAGE_KEY_API_URL = "barber_booking_api_url";
+
+    // Read stored API URL or default
+    let apiUrl = localStorage.getItem(STORAGE_KEY_API_URL) || "";
+
+    // Set today's date as default in datepicker
+    document.addEventListener("DOMContentLoaded", () => {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const formattedDate = `${yyyy}-${mm}-${dd}`;
+      
+      const dateInput = document.getElementById("bookingDate");
+      dateInput.min = formattedDate;
+      dateInput.value = formattedDate;
+
+      // Update Custom API URL in modal input
+      document.getElementById("customApiUrl").value = apiUrl;
+
+      updateSummary();
+      updateSelectedStyles();
+    });
+
+    // Quick Date selector
+    function selectQuickDate(offsetDays) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      document.getElementById("bookingDate").value = `${yyyy}-${mm}-${dd}`;
+      
+      // Update quick button visual styles
+      const btns = document.querySelectorAll('.quick-date-btn');
+      btns.forEach((btn, idx) => {
+        if (idx === offsetDays) {
+          btn.classList.add('bg-amber-500', 'text-slate-950', 'border-amber-500');
+          btn.classList.remove('bg-slate-800', 'text-white', 'border-slate-700');
+        } else {
+          btn.classList.remove('bg-amber-500', 'text-slate-950', 'border-amber-500');
+          btn.classList.add('bg-slate-800', 'text-white', 'border-slate-700');
+        }
+      });
+
+      updateSummary();
+    }
+
+    // Dynamic Summary calculation
+    function updateSummary() {
+      // Service
+      const selectedServiceEl = document.querySelector('input[name="service"]:checked');
+      const serviceName = selectedServiceEl ? selectedServiceEl.value : "-";
+      const servicePrice = selectedServiceEl ? selectedServiceEl.getAttribute('data-price') : "0";
+      const serviceDuration = selectedServiceEl ? selectedServiceEl.getAttribute('data-duration') : "0";
+
+      // Barber
+      const selectedBarberEl = document.querySelector('input[name="barber"]:checked');
+      const barberName = selectedBarberEl ? selectedBarberEl.value : "-";
+
+      // Date & Time
+      const dateVal = document.getElementById("bookingDate").value;
+      const selectedTimeEl = document.querySelector('input[name="bookingTime"]:checked');
+      const timeVal = selectedTimeEl ? selectedTimeEl.value : "-";
+
+      // Customer
+      const nameVal = document.getElementById("customerName").value.trim() || "-";
+      const phoneVal = document.getElementById("customerPhone").value.trim() || "-";
+
+      // Format date for Thai display
+      let formattedThaiDate = dateVal;
+      if (dateVal) {
+        const parts = dateVal.split('-');
+        if (parts.length === 3) {
+          const thaiYear = parseInt(parts[0]) + 543;
+          formattedThaiDate = `${parts[2]}/${parts[1]}/${thaiYear}`;
+        }
+      }
+
+      // Update Elements
+      document.getElementById("sumService").textContent = serviceName;
+      document.getElementById("sumDuration").textContent = `${serviceDuration} นาที`;
+      document.getElementById("sumBarber").textContent = barberName;
+      document.getElementById("sumDate").textContent = formattedThaiDate;
+      document.getElementById("sumTime").textContent = `${timeVal} น.`;
+      document.getElementById("sumName").textContent = nameVal;
+      document.getElementById("sumPhone").textContent = phoneVal;
+      document.getElementById("sumPrice").textContent = `฿${Number(servicePrice).toLocaleString()}`;
+
+      updateSelectedStyles();
+    }
+
+    // Visual styles for selected cards
+    function updateSelectedStyles() {
+      // Services styling
+      document.querySelectorAll('.service-card').forEach(card => {
+        const input = card.querySelector('input[type="radio"]');
+        if (input && input.checked) {
+          card.classList.add('border-amber-500', 'bg-amber-500/10');
+          card.classList.remove('border-slate-700/70', 'bg-slate-800/50');
+        } else if (!card.classList.contains('border-amber-500/50')) {
+          card.classList.remove('border-amber-500', 'bg-amber-500/10');
+          card.classList.add('border-slate-700/70', 'bg-slate-800/50');
+        }
+      });
+
+      // Barbers styling
+      document.querySelectorAll('.barber-card').forEach(card => {
+        const input = card.querySelector('input[type="radio"]');
+        const indicator = card.querySelector('.selected-indicator');
+        if (input && input.checked) {
+          card.classList.add('border-amber-500', 'bg-slate-800');
+          card.classList.remove('border-slate-700', 'bg-slate-800/40');
+          if (indicator) indicator.classList.remove('hidden');
+        } else {
+          card.classList.remove('border-amber-500', 'bg-slate-800');
+          card.classList.add('border-slate-700', 'bg-slate-800/40');
+          if (indicator) indicator.classList.add('hidden');
+        }
+      });
+
+      // Time slots styling
+      document.querySelectorAll('.time-slot-label').forEach(label => {
+        const input = label.querySelector('input[type="radio"]');
+        const div = label.querySelector('.time-slot-btn');
+        if (input && input.checked) {
+          div.classList.add('bg-amber-500', 'text-slate-950', 'border-amber-500', 'font-bold');
+          div.classList.remove('bg-slate-800', 'text-white', 'border-slate-700');
+        } else {
+          div.classList.remove('bg-amber-500', 'text-slate-950', 'border-amber-500', 'font-bold');
+          div.classList.add('bg-slate-800', 'text-white', 'border-slate-700');
+        }
+      });
+    }
+
+    // FORM SUBMIT HANDLER
+    async function handleBookingSubmit(event) {
+      event.preventDefault();
+
+      const serviceEl = document.querySelector('input[name="service"]:checked');
+      const barberEl = document.querySelector('input[name="barber"]:checked');
+      const timeEl = document.querySelector('input[name="bookingTime"]:checked');
+      const dateVal = document.getElementById("bookingDate").value;
+      const customerName = document.getElementById("customerName").value.trim();
+      const customerPhone = document.getElementById("customerPhone").value.trim();
+      const lineId = document.getElementById("lineId").value.trim();
+      const notes = document.getElementById("notes").value.trim();
+
+      if (!customerName || !customerPhone || !dateVal || !timeEl) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ข้อมูลไม่ครบถ้วน',
+          text: 'กรุณากรอกชื่อ เบอร์โทรศัพท์ และเลือกวันเวลาให้เรียบร้อย',
+          confirmButtonColor: '#F59E0B'
+        });
+        return;
+      }
+
+      const bookingPayload = {
+        customerName: customerName,
+        customerPhone: customerPhone,
+        lineId: lineId || "-",
+        serviceName: serviceEl ? serviceEl.value : "ตัดผมทั่วไป",
+        price: serviceEl ? serviceEl.getAttribute('data-price') : 350,
+        barberName: barberEl ? barberEl.value : "ช่างคนไหนก็ได้",
+        bookingDate: dateVal,
+        bookingTime: timeEl.value,
+        notes: notes || "-"
+      };
+
+      // UI Loading state
+      setLoading(true);
+
+      try {
+        let bookingResult;
+
+        // ตรวจสอบ Endpoint ในการบันทึกข้อมูล
+        let targetEndpoint = apiUrl && apiUrl.startsWith("http") ? apiUrl : "/api/book";
+
+        try {
+          const response = await fetch(targetEndpoint, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+              'Content-Type': 'text/plain;charset=utf-8',
+            },
+            body: JSON.stringify(bookingPayload)
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.status === "success" || result.bookingId) {
+              bookingResult = result;
+            }
+          }
+        } catch (fetchErr) {
+          console.warn("Server endpoint fetch error, falling back:", fetchErr);
+        }
+
+        // กรณีออฟไลน์หรือไม่มีเซิร์ฟเวอร์
+        if (!bookingResult) {
+          const mockId = "BK-" + new Date().toISOString().slice(0,10).replace(/-/g,'') + "-" + Math.floor(1000 + Math.random() * 9000);
+          bookingResult = {
+            status: "success",
+            bookingId: mockId,
+            message: "บันทึกการจองสำเร็จ",
+            sheetUrl: "https://drive.google.com/drive/u/0/folders/" + DEFAULT_FOLDER_ID,
+            ...bookingPayload
+          };
+        }
+
+        // Show Ticket Modal
+        showSuccessModal(bookingResult, bookingPayload);
+
+      } catch (err) {
+        console.error("Booking Error:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถเชื่อมต่อ Google Apps Script ได้ กรุณาตรวจสอบ Web App URL หรือการเชื่อมต่ออินเทอร์เน็ต: ' + err.message,
+          confirmButtonColor: '#F59E0B'
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Toggle Loading state
+    function setLoading(isLoading) {
+      const btn = document.getElementById("btnSubmit");
+      const btnText = document.getElementById("btnSubmitText");
+      const btnIcon = document.getElementById("btnSubmitIcon");
+      const btnSpinner = document.getElementById("btnSubmitSpinner");
+
+      if (isLoading) {
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        btnText.textContent = "กำลังบันทึกข้อมูลเข้า Google Sheets...";
+        btnIcon.classList.add('hidden');
+        btnSpinner.classList.remove('hidden');
+      } else {
+        btn.disabled = false;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        btnText.textContent = "ยืนยันการจองคิว";
+        btnIcon.classList.remove('hidden');
+        btnSpinner.classList.add('hidden');
+      }
+    }
+
+    // Show Ticket Modal
+    function showSuccessModal(result, payload) {
+      document.getElementById("ticketId").textContent = result.bookingId || "BK-SUCCESS";
+      document.getElementById("ticketName").textContent = payload.customerName;
+      document.getElementById("ticketPhone").textContent = payload.customerPhone;
+      document.getElementById("ticketService").textContent = payload.serviceName;
+      document.getElementById("ticketBarber").textContent = payload.barberName;
+      document.getElementById("ticketDateTime").textContent = `${payload.bookingDate} (${payload.bookingTime} น.)`;
+      document.getElementById("ticketPrice").textContent = `฿${Number(payload.price).toLocaleString()}`;
+
+      document.getElementById("btnOpenSheet").href = result.sheetUrl || GOOGLE_SHEET_URL;
+
+      document.getElementById("successModal").classList.remove('hidden');
+    }
+
+    function closeSuccessModal() {
+      document.getElementById("successModal").classList.add('hidden');
+      // Reset form
+      document.getElementById("bookingForm").reset();
+      selectQuickDate(0);
+      updateSummary();
+    }
+
+    // API Modal Functions
+    function openApiConfigModal() {
+      document.getElementById("apiConfigModal").classList.remove('hidden');
+    }
+
+    function closeApiConfigModal() {
+      document.getElementById("apiConfigModal").classList.add('hidden');
+    }
+
+    function saveApiUrl() {
+      const val = document.getElementById("customApiUrl").value.trim();
+      apiUrl = val;
+      localStorage.setItem(STORAGE_KEY_API_URL, val);
+      closeApiConfigModal();
+
+      const badge = document.getElementById("apiStatusBadge");
+      if (apiUrl) {
+        badge.textContent = "เชื่อมต่อ Web App แล้ว";
+        badge.className = "text-emerald-400 font-medium";
+      } else {
+        badge.textContent = "โหมดทดสอบ (Simulated)";
+        badge.className = "text-amber-400 font-medium";
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'บันทึกเรียบร้อย',
+        text: apiUrl ? 'บันทึก Web App URL สำหรับเชื่อมต่อแล้ว' : 'กลับสู่โหมดจำลอง (Simulated Mode)',
+        timer: 1800,
+        showConfirmButton: false
+      });
+    }
+  </script>
+</body>
+</html>

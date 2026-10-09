@@ -1,0 +1,9 @@
+# Local temporary files
+powershell.bat
+find_creds.py
+create_sheets.py
+bookings.json
+*.csv
+*.xlsx
+node_modules/
+.DS_Store
