@@ -850,8 +850,43 @@
         notes: notes || "-"
       };
 
-      // UI Loading state
-      setLoading(true);
+      // ตรวจสอบ Web App API บน GitHub Pages
+      if (!apiUrl && window.location.hostname.includes("github.io")) {
+        setLoading(false);
+        Swal.fire({
+          icon: 'info',
+          title: 'ต้องเชื่อมต่อ Web App API ก่อน',
+          html: `
+            <div class="text-left text-xs space-y-2 text-slate-300">
+              <p>เนื่องจากเว็บนี้เปิดบน GitHub Pages เพื่อบันทึกข้อมูลลง Google Sheet จำเป็นต้องใช้ <b>Web App URL</b> จาก Google Apps Script ครับ</p>
+              <ol class="list-decimal list-inside space-y-1 text-slate-400">
+                <li>เปิด Google Sheet ของคุณ</li>
+                <li>ไปที่ <b>ส่วนขยาย (Extensions)</b> &gt; <b>Apps Script</b></li>
+                <li>กด <b>Deploy</b> &gt; <b>New deployment</b> &gt; <b>Web app</b> (สิทธิ์: Everyone)</li>
+                <li>คัดลอก URL ที่ได้มาใส่ในช่องตั้งค่าด้านบน</li>
+              </ol>
+            </div>
+          `,
+          confirmButtonText: 'ไปที่หน้าตั้งค่า URL',
+          confirmButtonColor: '#F59E0B',
+          showCancelButton: true,
+          cancelButtonText: 'ทดสอบจำลอง (Simulation)'
+        }).then((res) => {
+          if (res.isConfirmed) {
+            openApiConfigModal();
+          } else {
+            // ดำเนินการในโหมดจำลอง
+            const mockId = "BK-" + new Date().toISOString().slice(0,10).replace(/-/g,'') + "-" + Math.floor(1000 + Math.random() * 9000);
+            showSuccessModal({
+              status: "success",
+              bookingId: mockId,
+              message: "จำลองการจอง (Simulation Mode)",
+              sheetUrl: GOOGLE_SHEET_URL
+            }, bookingPayload);
+          }
+        });
+        return;
+      }
 
       try {
         let bookingResult;
